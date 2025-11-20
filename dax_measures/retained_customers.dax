@@ -1,0 +1,29 @@
+
+CREATE MEASURE 'key_measures'[Retained_Customers] = 
+VAR CurrentMonth = MAX(dim_calendar[Date])
+VAR LastMonth = EOMONTH(CurrentMonth, -1)
+
+VAR CustomersLastMonth =
+    CALCULATETABLE(
+        VALUES(cleaned_online_retail[CustomerID]),
+        FILTER(
+            ALL(dim_calendar[Date]),
+            dim_calendar[Date] >= DATE(YEAR(LastMonth), MONTH(LastMonth), 1) &&
+            dim_calendar[Date] <= EOMONTH(LastMonth, 0)
+        )
+    )
+
+VAR CustomersThisMonth =
+    CALCULATETABLE(
+        VALUES(cleaned_online_retail[CustomerID]),
+        FILTER(
+            ALL(dim_calendar[Date]),
+            dim_calendar[Date] >= DATE(YEAR(CurrentMonth), MONTH(CurrentMonth), 1) &&
+            dim_calendar[Date] <= EOMONTH(CurrentMonth, 0)
+        )
+    )
+
+RETURN
+COUNTROWS(
+    INTERSECT(CustomersLastMonth, CustomersThisMonth)
+)
