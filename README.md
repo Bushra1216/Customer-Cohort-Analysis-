@@ -46,7 +46,7 @@ This project follows a complete analytics workflow — including data preparatio
 
 <br>
 <h2><a class="anchor" id="customerLevel"></a>Cohort Analysis based on Customer Counts</h2>
-Assess customer retention by counting distinct customers in each cohort across subsequent months
+This analysis examines customer retention by counting distinct customers in each cohort across subsequent months. Cohorts are defined based on each customer's first purchase month, allowing us to track how long customers remain active after initial purchase. By observing changes in customer counts across different cohorts or months, this reveals key retention patterns such as when engagement drops or how different customer groups behave over time. This insight help retailers understand customer behavior trends, identify drop-off points and make targeted improvements to increase retention for long-term customer value. 
 
 **Query Breakdown:**
 ```sql
@@ -77,5 +77,40 @@ ORDER BY Cohort_Month, Cohort_Index ASC;
   ```
 
 
+Explanation:<br>
+1. CTE - Determining Purchase Context:<br>
+- `Purchase_Date`- Normalizes each transaction date (`InvoiceDate`) to the first day of its month(e.g., 2011-04-01)
+- `Cohort_Month` - It defines initial purchase date as `Cohort Month` using a window function `MIN(...) OVER(...)` to assign every customer to their first purchase month, ensuring all later purchases are gouped under the correct cohort.
+2. CTE2 - Calculating Cohort Index:<br>
+- `Cohort Index` - Measures how many months have elapsed since the customer's first purchase.<br>
+     Month_0 = First purchase month<br>
+	 Month_1 = One month later<br>
+	 Month_2...and so on, that helps to track how customer activity changes over time.
+3. Final Query - Generating Cohort Table:<br>
+- This will aggregate unique customers in each month since cohort formation.<br>
 
+Now pivoting the result for matrix view
 
+```sql
+-- pivot to a matrix for visualization
+SELECT Cohort_Month,
+       [0] AS Month_0, 
+	   [1] AS Month_1, 
+	   [2] AS Month_2, 
+	   [3] AS Month_3, 
+	   [4] AS Month_4, 
+	   [5] AS Month_5, 
+       [6] AS Month_6, 
+	   [7] AS Month_7, 
+	   [8] AS Month_8, 
+	   [9] AS Month_9,
+	   [10] AS Month_10, 
+	   [11] AS Month_11, 
+	   [12] AS Month_12 INTO #pivoted_table
+FROM #CohortTable
+PIVOT(
+     SUM(Active_Customers) 
+	 FOR Cohort_Index IN ([0], [1], [2], [3], [4], [5], [6] , [7], [8], [9], [10], [11], [12])
+) AS pivot_tbl;
+
+```
